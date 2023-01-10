@@ -9,3 +9,6 @@ int Window_Height = int(Draw::GetHeight()*0.6);
 
 [Setting name="Width of the browser window"]
 int Window_Width = int(Draw::GetWidth()*0.4);
+
+[Setting name="Limit of posts"]
+int Setting_searchLimit = 10;

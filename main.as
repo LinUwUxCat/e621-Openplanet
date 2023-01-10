@@ -1,7 +1,6 @@
 bool browserShown = false;
 string inputTags = "";
-string searchTags = "";
-
+Json::Value jsonResult = Json::Parse("{loading : true}");
 void Main(){
     if(Setting_FirstTimeUse){
         Setting_FirstTimeUse=false;
@@ -28,10 +27,16 @@ void Render(){
         inputTags = UI::InputText("Enter some tags", inputTags, 0);
         bool clicked =  UI::Button("Search");
         if (clicked){
-            searchTags = inputTags.Replace(" ", "+");
-            getFromE(searchTags);
-            UI::Text(response);
+            array<string> searchTags = inputTags.Split(" ");
+            auto tagsBox = Tags(searchTags);
+            startnew(getFromE, tagsBox); 
         }
+        if (jsonResult['loading']=='true'){
+            UI::Text("Loading...");
+        } else {
+            UI::Text(jsonResult['posts'][0]['created_at']);
+        }
+        
     }
     UI::End();
 }
