@@ -1,6 +1,6 @@
 bool browserShown = false;
 string inputTags = "";
-Json::Value jsonResult = Json::Parse("{loading : true}");
+Json::Value jsonResult = Json::Parse('{"loading" : false}');
 void Main(){
     if(Setting_FirstTimeUse){
         Setting_FirstTimeUse=false;
@@ -21,9 +21,9 @@ void Render(){
     if (!Setting_isOverEighteen) return;
     if (!browserShown) return;
 
-    UI::SetNextWindowSize(500, 500);
+    UI::SetNextWindowSize(Window_Width,Window_Height);
     UI::SetNextWindowPos(50, 50);
-    if (UI::Begin(Icons::Paw + " e621 browser", browserShown, UI::WindowFlags::NoCollapse)){
+    if (UI::Begin(Icons::Paw + " e621 browser", browserShown, UI::WindowFlags::NoCollapse | UI::WindowFlags::HorizontalScrollbar)){
         inputTags = UI::InputText("Enter some tags", inputTags, 0);
         bool clicked =  UI::Button("Search");
         if (clicked){
@@ -31,10 +31,21 @@ void Render(){
             auto tagsBox = Tags(searchTags);
             startnew(getFromE, tagsBox); 
         }
-        if (jsonResult['loading']=='true'){
+        bool loading = jsonResult['loading'];
+        if (loading){
             UI::Text("Loading...");
+        } else if (jsonResult.HasKey('posts')){
+            string s = "";
+            for (int i = 0; i<Query_searchLimit; i++){
+                if (!jsonResult['posts'][i].HasKey('file') || !jsonResult['posts'][i].HasKey('preview')) break;
+                string ext = jsonResult['posts'][i]['file']['ext'];
+                if(ext != "png" && ext != "jpg") continue;
+                string imgLink = jsonResult['posts'][i]['preview']['url'];
+                s += "dummy\n";
+            }
+            UI::Text(s);
         } else {
-            UI::Text(jsonResult['posts'][0]['created_at']);
+            UI::Text("No search yet!");
         }
         
     }
