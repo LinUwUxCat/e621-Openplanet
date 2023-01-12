@@ -36,14 +36,27 @@ void Render(){
             UI::Text("Loading...");
         } else if (jsonResult.HasKey('posts')){
             string s = "";
-            for (int i = 0; i<Query_searchLimit; i++){
-                if (!jsonResult['posts'][i].HasKey('file') || !jsonResult['posts'][i].HasKey('preview')) break;
-                string ext = jsonResult['posts'][i]['file']['ext'];
-                if(ext != "png" && ext != "jpg") continue;
-                string imgLink = jsonResult['posts'][i]['preview']['url'];
-                s += "dummy\n";
+            if(UI::BeginTable("images", Window_ImagesPerRow, UI::TableColumnFlags::WidthStretch)){
+                UI::TableNextColumn();
+                for (int i = 0; i<Query_searchLimit; i++){
+                    if (!jsonResult['posts'][i].HasKey('file') || !jsonResult['posts'][i].HasKey('preview')) break;
+                    string ext = jsonResult['posts'][i]['file']['ext'];
+                    if(ext != "png" && ext != "jpg") continue;
+                    string imgLink = jsonResult['posts'][i][Setting_LowResImages ? 'preview' : 'file']['url'];
+                    auto img = Images::CachedFromURL(imgLink);
+                    if (img.m_texture !is null){
+                        vec2 thumbSize = img.m_texture.GetSize();
+                        UI::Image(img.m_texture, vec2(
+                            UI::GetWindowSize().x/Window_ImagesPerRow - Window_ImageGap,
+                            thumbSize.y * ((UI::GetWindowSize().x/2 - 30)/thumbSize.x)
+                        ));
+                    } else {
+                        UI::Text("Image is loading...");
+                    }
+                }
+                UI::Text(s);
+                UI::EndTable();
             }
-            UI::Text(s);
         } else {
             UI::Text("No search yet!");
         }
