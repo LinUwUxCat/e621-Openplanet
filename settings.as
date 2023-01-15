@@ -7,11 +7,8 @@ bool Setting_FirstTimeUse=true;
 [Setting hidden]
 bool Setting_VerboseLog=true;
 
-[Setting name="Height of the browser window" category="Window" min=1 max=1080]
-int Window_Height = int(Draw::GetHeight()*0.6);
-
-[Setting name="Width of the browser window" category="Window" min=1 max=1920]
-int Window_Width = int(Draw::GetWidth()*0.4);
+[Setting hidden name="Width and height of the browser window" category="Window"]
+vec2 Window_Size = vec2(Draw::GetWidth()*0.5, Draw::GetHeight()*0.6);
 
 [Setting name="Number of Images per row" category="Window" min=1 max=10]
 int Window_ImagesPerRow = 2;
@@ -22,5 +19,5 @@ int Window_ImageGap = 20;
 [Setting name="Limit of posts" category="e621"]
 int Query_searchLimit = 10;
 
-[Setting name="Load preview instead of full image" category="e621" description="This will load lower quality images, which are low-res but weight a lot less so they download quicker."]
+[Setting name="Load preview instead of full image" category="e621" description="This will load images that have a lower quality. The difference is barely noticeable in the browser but becomes more apparent when looking at the image."]
 bool Setting_LowResImages = false;
