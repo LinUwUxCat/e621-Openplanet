@@ -1,7 +1,8 @@
 bool browserShown = false;
 string inputTags = "";
 Json::Value jsonResult = Json::Parse('{"loading" : false}');
-array<Post> openPosts; //TODO : switch to dict
+array<Post> openPosts;
+int newTab=-1;
 void Main(){
     if(Setting_FirstTimeUse){
         Setting_FirstTimeUse=false;
@@ -56,7 +57,20 @@ void Render(){
                                     UI::GetWindowSize().x/Window_ImagesPerRow - Window_ImageGap,
                                     thumbSize.y * ((UI::GetWindowSize().x/Window_ImagesPerRow - 30)/thumbSize.x)
                                 ));
-                                if (UI::IsItemClicked()) openPosts.InsertLast(Post(jsonResult['posts'][i]));
+                                if (UI::IsItemClicked()){
+                                    bool add=true;
+                                    for(uint p = 0; p<openPosts.Length; p++){
+                                        uint64 id = jsonResult['posts'][i]['id'];
+                                        if (openPosts[p].getId()==id){
+                                            add=false;
+                                             newTab=p;
+                                        }
+                                    }
+                                    if(add){
+                                        openPosts.InsertLast(Post(jsonResult['posts'][i]));
+                                        newTab=openPosts.Length-1;
+                                    }
+                                } 
                             } else {
                                 UI::Text("Image is loading...");
                             }
@@ -73,15 +87,17 @@ void Render(){
             UI::EndTabItem();
         }
         for(uint i = 0; i<openPosts.Length; i++){
+            bool open = true;
             string name = "#" + openPosts[i].getId();
             if (name=="#") continue;
-            if(UI::BeginTabItem(name)){
+            if(UI::BeginTabItem(name, open, newTab==i?UI::TabItemFlags::SetSelected:0)){
+                if(newTab>-1)newTab=-1;
                 auto img = Images::CachedFromURL(Setting_LowResImages ? openPosts[i].getSampleUrl() : openPosts[i].getUrl());
                 if (img.m_texture !is null){
                     vec2 thumbSize = img.m_texture.GetSize();
                     UI::Image(img.m_texture, vec2(
-                        UI::GetWindowSize().x,
-                        thumbSize.y * ((UI::GetWindowSize().x)/thumbSize.x)
+                        UI::GetWindowSize().x / 2.5,
+                        thumbSize.y * ((UI::GetWindowSize().x)/thumbSize.x) / 2.5
                     ));
                 } else {
                     UI::Text("Image is loading...");
@@ -91,9 +107,10 @@ void Render(){
                     auto timg = Images::CachedFromURL(openPosts[i].getUrl());
                     if (timg.m_texture !is null){
                         vec2 thumbSize = timg.m_texture.GetSize();
+                        float ratio = Math::Min((Draw::GetWidth()-UI::GetMousePos().x) / thumbSize.x, (Draw::GetHeight()-UI::GetMousePos().y) / thumbSize.y);
                         UI::Image(timg.m_texture, vec2(
-                            Draw::GetWidth()/1.2,
-                            thumbSize.y * ((Draw::GetWidth()/1.2)/thumbSize.x)
+                            thumbSize.x*ratio,
+                            thumbSize.y*ratio
                         ));
                     } else {
                         UI::Text("Image is loading...");
@@ -101,6 +118,9 @@ void Render(){
                     UI::EndTooltip();
                 }
                 UI::EndTabItem();
+            }
+            if (!open){
+                openPosts.RemoveAt(i--);
             }
         }
         UI::EndTabBar();
