@@ -2,7 +2,16 @@ bool browserShown = false;
 string inputTags = "";
 Json::Value jsonResult = Json::Parse('{"loading" : false}');
 array<Post> openPosts;
+int spaceAvailable;
 int newTab=-1;
+const vec4 TAG_SPECIES = vec4(0.9, 0.2, 0.2, 1);
+const vec4 TAG_ARTIST = vec4(0.7, 0.4, 0.0, 1);
+const vec4 TAG_COPYRIGHT = vec4(0.9, 0.0, 0.7, 1);
+const vec4 TAG_CHARACTER = vec4(0.1, 0.9, 0.1, 1);
+const vec4 TAG_GENERAL = vec4(0.3, 0.3, 1, 1);
+const vec4 TAG_META = vec4(0.1, 0.1, 0.1, 1);
+const vec2 BUTTON_PADDING = vec2(12, 12);
+
 void Main(){
     if(Setting_FirstTimeUse){
         Setting_FirstTimeUse=false;
@@ -30,6 +39,7 @@ void Render(){
         UI::BeginTabBar("Tabs");
         if(UI::BeginTabItem(Icons::Paw + "Browse")){
             inputTags = UI::InputText("Enter some tags", inputTags, 0);
+            UI::SameLine();
             bool clicked =  UI::Button("Search");
             if (clicked){
                 array<string> searchTags = inputTags.Split(" ");
@@ -40,11 +50,13 @@ void Render(){
             if (loading){
                 UI::Text("Loading...");
             } else if (jsonResult.HasKey('posts')){
-                string s = "";
                 if(UI::BeginTable("images", Window_ImagesPerRow)){
                     for (int i = 0; i<Query_searchLimit; i++){
                         UI::TableNextColumn();
                         try{
+                            if(jsonResult['posts'].Length==0){
+                                UI::Text("No results!");
+                            }
                             if(jsonResult['posts'].Length == i) break;
                             if (!jsonResult['posts'][i].HasKey('file') || !jsonResult['posts'][i].HasKey('preview')) break;
                             string ext = jsonResult['posts'][i]['file']['ext'];
@@ -78,7 +90,6 @@ void Render(){
                             UI::Text("This image has blacklisted tags!");
                         }
                     }
-                    UI::Text(s);
                     UI::EndTable();
                 }
             } else {
@@ -117,6 +128,17 @@ void Render(){
                     }
                     UI::EndTooltip();
                 }
+
+                spaceAvailable = UI::GetWindowSize().x;
+                
+                renderTagList(openPosts[i].artistTags(), TAG_ARTIST);
+                renderTagList(openPosts[i].copyrightTags(), TAG_COPYRIGHT);
+                renderTagList(openPosts[i].characterTags(), TAG_CHARACTER);
+                renderTagList(openPosts[i].speciesTags(), TAG_SPECIES);
+                renderTagList(openPosts[i].generalTags(), TAG_GENERAL);
+                renderTagList(openPosts[i].metaTags(), TAG_META);
+                
+                
                 UI::EndTabItem();
             }
             if (!open){
