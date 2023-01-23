@@ -24,38 +24,38 @@ class Post{
     }
     Post(){}
     Json::Value generalTags(){
-        string r = "";
-        if (!json.HasKey("tags")) return r;
+        string r = "{}";
+        if (!json.HasKey("tags")) return Json::Parse(r);
         return json["tags"]["general"];
     }
 
     Json::Value artistTags(){
-        string r = "";
-        if (!json.HasKey("tags")) return r;
+        string r = "{}";
+        if (!json.HasKey("tags")) return Json::Parse(r);
         return json["tags"]["artist"];
     }
 
     Json::Value copyrightTags(){
-        string r = "";
-        if (!json.HasKey("tags")) return r;
+        string r = "{}";
+        if (!json.HasKey("tags")) return Json::Parse(r);
         return json["tags"]["copyright"];
     }
 
     Json::Value characterTags(){
-        string r = "";
-        if (!json.HasKey("tags")) return r;
+        string r = "{}";
+        if (!json.HasKey("tags")) return Json::Parse(r);
         return json["tags"]["character"];
     }
 
     Json::Value metaTags(){
-        string r = "";
-        if (!json.HasKey("tags")) return r;
+        string r = "{}";
+        if (!json.HasKey("tags")) return Json::Parse(r);
         return json["tags"]["meta"];
     }
     
     Json::Value speciesTags(){
-        string r = "";
-        if (!json.HasKey("tags")) return r;
+        string r = "{}";
+        if (!json.HasKey("tags")) return Json::Parse(r);
         return json["tags"]["species"];
     }
 
@@ -69,6 +69,39 @@ class Post{
         if (!json.HasKey("sample")) return "";
         if (json['sample']['url']==null) return "";
         return json["sample"]["url"];
+    }
+
+    /**
+     * returns a vec3 with the following:
+     * - x is the total score
+     * - y is the upvote score
+     * - z is the downvote score
+     */
+    vec3 getScore(){
+        if (!json.HasKey('score'))return vec3(0,0,0);
+        int total = json['score']['total'];
+        int up = json['score']['up'];
+        int down = json['score']['down'];
+        return vec3(total, up, down);
+    }
+
+    /**
+     * if formatted is true, will return colored and verbose output (Safe, Questionable, Explicit)
+     * else, will return direct output (s, q, e)
+     */
+    string getRating(bool formatted){
+        if (!json.HasKey('rating')){
+            if (!formatted)return "e"; else return "\\$f00Explicit";
+        }
+        string r = json['rating'];
+        if (!formatted) return r;
+        if (r=="s"){
+            return "\\$0f0Safe";
+        } else if (r=="q"){
+            return "\\$cc1Questionable";
+        } else {
+            return "\\$f00Explicit";
+        }
     }
 
     uint64 getId(){
