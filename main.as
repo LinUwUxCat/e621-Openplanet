@@ -5,6 +5,7 @@ Json::Value jsonResult = Json::Parse('{"loading" : false}');
 array<Post> openPosts;
 int spaceAvailable;
 int newTab=-1;
+int currentPage = 1;
 const vec4 TAG_SPECIES = vec4(0.9, 0.2, 0.2, 1);
 const vec4 TAG_ARTIST = vec4(0.7, 0.4, 0.0, 1);
 const vec4 TAG_COPYRIGHT = vec4(0.9, 0.0, 0.7, 1);
@@ -57,7 +58,7 @@ void Render(){
             bool clicked =  UI::Button("Search");
             if (clicked){
                 array<string> searchTags = inputTags.Split(" ");
-                auto tagsBox = Tags(searchTags);
+                auto tagsBox = Tags(searchTags, currentPage);
                 startnew(getFromE, tagsBox); 
             }
             bool loading = true;
@@ -118,6 +119,8 @@ void Render(){
                         }
                     }
                     UI::EndTable();
+                    if(UI::Button("Previous"))currentPage--;
+                    if(UI::Button("Next"))currentPage++;
                 }
             } else {
                 UI::Text("No search yet!");

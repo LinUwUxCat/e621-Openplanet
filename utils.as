@@ -1,7 +1,9 @@
 class Tags{
     array<string> tags;
-    Tags(array<string> s){
+    int page;
+    Tags(array<string> s, int p){
         tags = s;
+        page = p;
     }
     string toUrl(){
         string r;
