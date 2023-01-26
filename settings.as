@@ -1,6 +1,9 @@
 [Setting name="I am 18 years old or older and I understand this plugin might show content unsuitable for children" category="e621" description="If this checkbox is disabled, the plugin will not display anything."]
 bool Setting_isOverEighteen=false;
 
+[Setting name="e926 switch" description="Toggle this if you want to u_se e926.net instead of e621.net"]
+bool is926 = true;
+
 [Setting hidden]
 bool Setting_FirstTimeUse=true;
 

@@ -21,10 +21,14 @@ class Tags{
  */
 class Post{
     Json::Value json;
+    bool isZoomed;
+    float zoom;
     Post(Json::Value j){
         json = j;
+        isZoomed = false;
+        zoom = 1.0;
     }
-    Post(){}
+    Post(){isZoomed = false;zoom = 1.0;}
     Json::Value generalTags(){
         string r = "{}";
         if (!json.HasKey("tags")) return Json::Parse(r);
@@ -71,6 +75,29 @@ class Post{
         if (!json.HasKey("sample")) return "";
         if (json['sample']['url']==null) return "";
         return json["sample"]["url"];
+    }
+
+    int getWidth(){
+        if (!json.HasKey("file")) return 0;
+        if (json['file']['width']==null) return 0;
+        return json["file"]["width"];
+    }
+
+    int getHeight(){
+        if (!json.HasKey("file")) return 0;
+        if (json['file']['height']==null) return 0;
+        return json["file"]["height"];
+    }
+
+    float getSize(int div){
+        if (!json.HasKey("file")) return 0.0;
+        if (json['file']['size']==null) return 0.0;
+        float r = json["file"]["size"];
+        return r/div;
+    }
+
+    string getPostUrl(){
+        return "https://e"+ (is926?"926":"621") + ".net/posts/"+this.getId();
     }
 
     /**
@@ -126,7 +153,7 @@ bool ColoredButton(const string &in text, vec4 rgb, vec2 size){
 void renderTagList(Json::Value tags, vec4 rgb){
     for(uint tagindex = 0; tagindex<tags.Length; tagindex++){
         string tag = tags[tagindex];
-        int buttonWidth = Draw::MeasureString(tag).x + BUTTON_PADDING.x + 12;
+        int buttonWidth = Draw::MeasureString(tag).x + BUTTON_PADDING.x + 14;
         if(buttonWidth >= spaceAvailable){
             UI::NewLine();
             spaceAvailable = UI::GetWindowSize().x;

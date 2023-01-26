@@ -1,7 +1,8 @@
 bool browserShown = false;
 bool maintenance = false;
+bool loading = false;
 string inputTags = "";
-Json::Value jsonResult = Json::Parse('{"loading" : false}');
+Json::Value jsonResult = Json::Parse("{}");
 array<Post> openPosts;
 int spaceAvailable;
 int newTab=-1;
@@ -43,10 +44,10 @@ void Render(){
     if (UI::Begin(Icons::Paw + " e621 browser", browserShown, UI::WindowFlags::NoCollapse | UI::WindowFlags::HorizontalScrollbar)){
         Window_Size = UI::GetWindowSize();
         if(maintenance){
-            UI::Text("e621 is in maintenance - please try again later!");
+            UI::Text("e" + (is926?"926":"621") + " is in maintenance - please try again later!");
             if (ColoredButton("Retry", vec4(1, 0.05, 0.05, 1), Draw::MeasureString("Retry")+BUTTON_PADDING)){
                 maintenance=false;
-                jsonResult = Json::Parse('{"loading" : false}');
+                jsonResult = Json::Parse('{}');
             }
             UI::End();
             return;
@@ -55,29 +56,23 @@ void Render(){
         if(UI::BeginTabItem(Icons::Paw + "Browse")){
             inputTags = UI::InputText("Enter some tags", inputTags, 0);
             UI::SameLine();
-            bool clicked =  UI::Button("Search");
-            if (clicked){
-                array<string> searchTags = inputTags.Split(" ");
-                auto tagsBox = Tags(searchTags, currentPage);
-                startnew(getFromE, tagsBox); 
+            bool clicked = false;
+            if(UI::Button("Search") || UI::IsKeyPressed(UI::Key::Enter)){
+                clicked = true;
+                currentPage=1;
             }
-            bool loading = true;
-            try{
-                loading = jsonResult['loading'];
-            } catch {
-                if(jsonResult == null){
+            if(jsonResult == null){
                     maintenance = true;
                     UI::EndTabItem();
                     UI::EndTabBar();
                     UI::End();
-                } //else, idfk.
-            }
+            } //else, idfk.
             
             
             
             if (loading){
                 UI::Text("Loading...");
-            } else if (jsonResult != null && jsonResult.HasKey('posts')){
+            } else if (jsonResult != null && jsonResult.GetType() != Json::Type::Null && jsonResult.Length != 0){
                 if(UI::BeginTable("images", Window_ImagesPerRow)){
                     for (int i = 0; i<Query_searchLimit; i++){
                         UI::TableNextColumn();
@@ -119,11 +114,28 @@ void Render(){
                         }
                     }
                     UI::EndTable();
-                    if(UI::Button("Previous"))currentPage--;
-                    if(UI::Button("Next"))currentPage++;
+                    UI::BeginDisabled(currentPage == 1);
+                    if(UI::Button("Previous")){
+                        currentPage--;
+                        clicked=true;
+                    }
+                    UI::EndDisabled();
+                    UI::SameLine();
+                    UI::BeginDisabled(jsonResult['posts'].Length<Query_searchLimit);
+                    if(UI::Button("Next")){
+                        clicked=true;
+                        currentPage++;
+                    }
+                    UI::EndDisabled();
+                    
                 }
             } else {
-                UI::Text("No search yet!");
+                UI::Text("Nothing there!");
+            }
+            if (clicked){
+                array<string> searchTags = inputTags.Split(" ");
+                auto tagsBox = Tags(searchTags, currentPage);
+                startnew(getFromE, tagsBox); 
             }
             UI::EndTabItem();
         }
@@ -133,79 +145,98 @@ void Render(){
             if (name=="#") continue;
             if(UI::BeginTabItem(name, open, newTab==i?UI::TabItemFlags::SetSelected:0)){
                 if(newTab>-1)newTab=-1;
-                if(UI::BeginTable("postpage", 2, UI::TableFlags::SizingStretchProp)){
-                    UI::TableSetupColumn("", UI::TableColumnFlags::WidthFixed);
-                    UI::TableSetupColumn("", UI::TableColumnFlags::WidthFixed);
-                    UI::TableNextColumn();
-                    auto img = Images::CachedFromURL(Setting_LowResImages ? openPosts[i].getSampleUrl() : openPosts[i].getUrl());
-                    if (img.m_texture !is null){
-                        vec2 thumbSize = img.m_texture.GetSize();
-                        float ratio = Math::Min((UI::GetWindowSize().x / 1.4)/thumbSize.x, (UI::GetWindowSize().y - 100) /thumbSize.y);
-                        UI::Image(img.m_texture, vec2(
-                            thumbSize.x * ratio,
-                            thumbSize.y * ratio
-                        ));
-                    } else {
-                        UI::Text("Image is loading...");
-                    }
-                    if (UI::IsItemHovered()) {
-                        UI::BeginTooltip();
-                        auto timg = Images::CachedFromURL(openPosts[i].getUrl());
-                        if (timg.m_texture !is null){
-                            vec2 thumbSize = timg.m_texture.GetSize();
-                            float ratio = Math::Min((Draw::GetWidth()-UI::GetMousePos().x) / thumbSize.x, (Draw::GetHeight()-UI::GetMousePos().y) / thumbSize.y);
-                            UI::Image(timg.m_texture, vec2(
-                                thumbSize.x*ratio,
-                                thumbSize.y*ratio
+                if (!openPosts[i].isZoomed){
+                    if(UI::BeginTable("postpage", 2, UI::TableFlags::SizingStretchProp)){
+                        UI::TableSetupColumn("", UI::TableColumnFlags::WidthFixed);
+                        UI::TableSetupColumn("", UI::TableColumnFlags::WidthFixed);
+                        UI::TableNextColumn();
+                        auto img = Images::CachedFromURL(Setting_LowResImages ? openPosts[i].getSampleUrl() : openPosts[i].getUrl());
+                        if (img.m_texture !is null){
+                            vec2 thumbSize = img.m_texture.GetSize();
+                            float ratio = Math::Min((UI::GetWindowSize().x / 1.5)/thumbSize.x, (UI::GetWindowSize().y - 100) /thumbSize.y);
+                            UI::Image(img.m_texture, vec2(
+                                thumbSize.x * ratio,
+                                thumbSize.y * ratio
                             ));
                         } else {
                             UI::Text("Image is loading...");
                         }
-                        UI::EndTooltip();
-                    }
-                    UI::TableNextColumn();
-                    UI::PushFont(bigFont);
-                    UI::Text(name);
-                    UI::PopFont();
-                    UI::PushFont(sideFont);
-                    string artists;
-                    for (uint a = 0; a<openPosts[i].artistTags().Length; a++){
-                        artists += openPosts[i].artistTags()[a];
-                        if (openPosts[i].artistTags().Length-1 ==a){
-                            UI::Text("Artist" + (openPosts[i].artistTags().Length > 1? "s : " : " : ") + artists);
-                        } else {
-                            artists += ", ";
+                        if(UI::IsItemClicked()){
+                            openPosts[i].isZoomed = true;
                         }
-                    }
-                    vec3 score = openPosts[i].getScore();
-                    if (score.x>0){
-                        UI::Text("Score : \\$0f0" + score.x);
-                    } else if (score.x < 0){
-                        UI::Text("Score : \\$f00" + score.x);
-                    } else {
-                        UI::Text("Score : \\$bb0" + score.x);
-                    }
-                    if (UI::IsItemHovered()){
-                        UI::BeginTooltip();
-                        UI::Text("\\$0f0" + score.y + "\\$f00" + score.z);
-                        UI::EndTooltip();
-                    }
-                    UI::Text("Rating : " + openPosts[i].getRating(true));
-                    UI::PopFont();
+                        UI::TableNextColumn();
+                        UI::PushFont(bigFont);
+                        UI::Text(name);
+                        UI::PopFont();
+                        UI::PushFont(sideFont);
+                        string artists;
+                        for (uint a = 0; a<openPosts[i].artistTags().Length; a++){
+                            artists += openPosts[i].artistTags()[a];
+                            if (openPosts[i].artistTags().Length-1 ==a){
+                                UI::Text("Artist" + (openPosts[i].artistTags().Length > 1? "s : " : " : ") + artists);
+                            } else {
+                                artists += ", ";
+                            }
+                        }
+                        vec3 score = openPosts[i].getScore();
+                        if (score.x>0){
+                            UI::Text("Score : \\$0f0" + score.x);
+                        } else if (score.x < 0){
+                            UI::Text("Score : \\$f00" + score.x);
+                        } else {
+                            UI::Text("Score : \\$bb0" + score.x);
+                        }
+                        if (UI::IsItemHovered()){
+                            UI::BeginTooltip();
+                            UI::Text("\\$0f0" + score.y + "\\$f00" + score.z);
+                            UI::EndTooltip();
+                        }
+                        UI::Text("Rating : " + openPosts[i].getRating(true));
 
-                    UI::EndTable();
+                        UI::Text("Size : " + openPosts[i].getWidth() + "x" + openPosts[i].getHeight() + " (" +  openPosts[i].getSize(1000) + " KB)");
+
+                        UI::PopFont();
+
+                        if (UI::Button("Open in browser")){
+                            OpenBrowserURL(openPosts[i].getPostUrl());
+                        }
+                        UI::SameLine();
+                        if(UI::Button("Copy Image Link")){
+                            IO::SetClipboard(openPosts[i].getUrl());
+                        }
+
+                        
+    
+                        UI::EndTable();
+                    }
+                    spaceAvailable = UI::GetWindowSize().x;
+                    
+                    renderTagList(openPosts[i].artistTags(), TAG_ARTIST);
+                    renderTagList(openPosts[i].copyrightTags(), TAG_COPYRIGHT);
+                    renderTagList(openPosts[i].characterTags(), TAG_CHARACTER);
+                    renderTagList(openPosts[i].speciesTags(), TAG_SPECIES);
+                    renderTagList(openPosts[i].generalTags(), TAG_GENERAL);
+                    renderTagList(openPosts[i].metaTags(), TAG_META);
+                    
+                    
+                    UI::EndTabItem();
+                } else {
+                    openPosts[i].zoom = Zoom::Render(openPosts[i].zoom);
+                    auto img = Images::CachedFromURL(openPosts[i].getUrl());
+                    if (img.m_texture !is null){
+                        vec2 thumbSize = img.m_texture.GetSize();
+                        UI::Image(img.m_texture, vec2(
+                            thumbSize.x * openPosts[i].zoom,
+                            thumbSize.y * openPosts[i].zoom
+                        ));
+                        if (UI::IsItemClicked()){
+                            openPosts[i].isZoomed = false;
+                        }
+                    } else {
+                        UI::Text("Image is loading...");
+                    }
+                    UI::EndTabItem();
                 }
-                spaceAvailable = UI::GetWindowSize().x;
-                
-                renderTagList(openPosts[i].artistTags(), TAG_ARTIST);
-                renderTagList(openPosts[i].copyrightTags(), TAG_COPYRIGHT);
-                renderTagList(openPosts[i].characterTags(), TAG_CHARACTER);
-                renderTagList(openPosts[i].speciesTags(), TAG_SPECIES);
-                renderTagList(openPosts[i].generalTags(), TAG_GENERAL);
-                renderTagList(openPosts[i].metaTags(), TAG_META);
-                
-                
-                UI::EndTabItem();
             }
             if (!open){
                 openPosts.RemoveAt(i--);
